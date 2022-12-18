@@ -21,7 +21,7 @@ class ViewController: UITableViewController {
         
         
     }
-    
+    // make API request and parse JSON
     private func makeRequest(url: String) {
         let request = URLRequest(url: URL(string: url)!)
 //        request.allHTTPHeaderFields = ["authToken": "nil"]
@@ -33,6 +33,7 @@ class ViewController: UITableViewController {
                 let jsonPetitions = try JSONDecoder().decode(Petitions.self, from: data)
                     self?.petitions = jsonPetitions.results
                     print((self?.petitions[0].title)! as String)
+                // reload data in main thread
                     DispatchQueue.main.async {
                         self?.tableView.reloadData()
                     }
@@ -61,13 +62,20 @@ class ViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
         let petition = petitions[indexPath.row]
+        // setup cell
         var content = cell.defaultContentConfiguration()
         content.text = petition.title
         content.secondaryText = petition.body
-        content.secondaryTextProperties.numberOfLines = 3
+        content.secondaryTextProperties.numberOfLines = 1
         cell.contentConfiguration = content
         
         return cell
+    }
+    // transfer data to detail view
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let vc = DetailViewController()
+        vc.detailItem = petitions[indexPath.row]
+        navigationController?.pushViewController(vc, animated: true)
     }
 
 
