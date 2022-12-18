@@ -9,60 +9,50 @@ import UIKit
 
 class ViewController: UITableViewController {
     var petitions = [Petition]()
+    let urlString = "https://www.hackingwithswift.com/samples/petitions-1.json"
+
+    
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let urlString = "https://www.hackingwithswift.com/samples/petitions-1.json"
         makeRequest(url: urlString)
+        //        print(petitions.count)
         
-    
+        
     }
-//    func fetchDataFromApi() {
-//
-//        guard let gitUrl = URL(string: "https://api.dev.ucheba.space/v1/institutions") else { return }
-//
-//        URLSession.shared.dataTask(with: gitUrl) { (data, response, error) in
-//
-//            guard let data = data else { return }
-//
-//            do {
-//                let decoder = JSONDecoder()
-//                let gitData = try decoder.decode(Institutions.self, from: data)
-//                    print(gitData.items ?? "Empty Name")
-//
-//            } catch let error {
-//                print("Error: ", error)
-//            }
-//        }.resume()
-        
-//    }
     
     private func makeRequest(url: String) {
-        var request = URLRequest(url: URL(string: url)!)
+        let request = URLRequest(url: URL(string: url)!)
 //        request.allHTTPHeaderFields = ["authToken": "nil"]
 //        request.httpMethod = "GET"
 
-        let task = URLSession.shared.dataTask(with: request) { [self] data, response, error in
-            if let data = data, let jsonPetitions = try? JSONDecoder().decode(Petitions.self, from: data) {
-                print(jsonPetitions.results[0]) // тут уже нет ничего
-                self.petitions = jsonPetitions.results
-                print(self.petitions)
+        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            guard let data = data else { return }
+            do {
+                let jsonPetitions = try JSONDecoder().decode(Petitions.self, from: data)
+                    self?.petitions = jsonPetitions.results
+                    print((self?.petitions[0].title)! as String)
+                    DispatchQueue.main.async {
+                        self?.tableView.reloadData()
+                    }
+            } catch let error {
+                print("Error: ", error)
             }
         }
         task.resume()
     }
     
-    func parse(json: Data?) {
-        let decoder = JSONDecoder()
-
-
-        if let json = json, let jsonPetitions = try? decoder.decode(Petitions.self, from: json) {
-            print(jsonPetitions.results[0])
-            petitions = jsonPetitions.results
-            tableView.reloadData()
-        }
-    }
+//    func parse(json: Data?) {
+//        let decoder = JSONDecoder()
+//
+//        if let json = json, let jsonPetitions = try? decoder.decode(Petitions.self, from: json) {
+//            petitions = jsonPetitions.results
+//            DispatchQueue.main.async {
+//                self.tableView.reloadData()
+//            }
+//        }
+//    }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return petitions.count
@@ -74,6 +64,7 @@ class ViewController: UITableViewController {
         var content = cell.defaultContentConfiguration()
         content.text = petition.title
         content.secondaryText = petition.body
+        content.secondaryTextProperties.numberOfLines = 3
         cell.contentConfiguration = content
         
         return cell
