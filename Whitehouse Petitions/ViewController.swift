@@ -9,15 +9,19 @@ import UIKit
 
 class ViewController: UITableViewController {
     var petitions = [Petition]()
-    let urlString = "https://www.hackingwithswift.com/samples/petitions-1.json"
-
     
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        let urlString: String
+        
+        if navigationController?.tabBarItem.tag == 0 {
+            urlString = "https://www.hackingwithswift.com/samples/petitions-1.json"
+        } else  {
+            urlString = "https://www.hackingwithswift.com/samples/petitions-2.json"
+        }
         
         makeRequest(url: urlString)
-        //        print(petitions.count)
         
         
     }
@@ -28,20 +32,30 @@ class ViewController: UITableViewController {
 //        request.httpMethod = "GET"
 
         let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            guard let data = data else { return }
+            guard let data = data else {
+                DispatchQueue.main.async {
+                    self?.showAlert(with: error?.localizedDescription)
+                }
+                return }
             do {
                 let jsonPetitions = try JSONDecoder().decode(Petitions.self, from: data)
                     self?.petitions = jsonPetitions.results
-                    print((self?.petitions[0].title)! as String)
                 // reload data in main thread
                     DispatchQueue.main.async {
                         self?.tableView.reloadData()
                     }
             } catch let error {
-                print("Error: ", error)
+                print("Error: ", error.localizedDescription)
+                self?.showAlert(with: error.localizedDescription)
             }
         }
         task.resume()
+    }
+    
+    func showAlert(with erorr: String?) {
+        let ac = UIAlertController(title: erorr, message: "There was a promlem please try again", preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "OK", style: .default))
+        present(ac, animated: true)
     }
     
 //    func parse(json: Data?) {
