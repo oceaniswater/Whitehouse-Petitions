@@ -9,15 +9,18 @@ import UIKit
 
 class ViewController: UITableViewController {
     var petitions = [Petition]()
+    var filtredPetitions = [Petition]()
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         let urlString: String
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Credits", style: .plain, target: self, action: #selector(tapCreditsButton))
-                
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Search", style: .plain, target: self, action: #selector(tapSearchButton))
         
+        // dinamic ref for tab bar
         if navigationController?.tabBarItem.tag == 0 {
             urlString = "https://www.hackingwithswift.com/samples/petitions-1.json"
         } else  {
@@ -43,10 +46,12 @@ class ViewController: UITableViewController {
             do {
                 let jsonPetitions = try JSONDecoder().decode(Petitions.self, from: data)
                     self?.petitions = jsonPetitions.results
+                    self?.filtredPetitions = self?.petitions ?? []
                 // reload data in main thread
                     DispatchQueue.main.async {
                         self?.tableView.reloadData()
                     }
+
             } catch let error {
                 print("Error: ", error.localizedDescription)
                 self?.showAlert(with: error.localizedDescription)
@@ -67,6 +72,38 @@ class ViewController: UITableViewController {
         present(ac, animated: true)
     }
     
+    @objc func tapSearchButton() {
+        let ac = UIAlertController(title: "Enter text", message: nil, preferredStyle: .alert)
+        ac.addTextField()
+        let submitAction = UIAlertAction(title: "Search", style: .default) {
+            // trying to avoid strong reference
+            [weak self, weak ac] action in
+            // checked textField is not nil
+            guard let text = ac?.textFields?[0].text else { return }
+            // use button Submit using answer and method out of closure
+            self?.submit(text)
+        }
+        
+        ac.addAction(submitAction)
+        present(ac, animated: true)
+    }
+    
+    func submit(_ text: String) {
+        if !text.isEmpty {
+            filtredPetitions = petitions.filter({ petition in
+                petition.title.contains(text)})
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
+        } else {
+            filtredPetitions = petitions
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
+        }
+        
+    }
+    
 //    func parse(json: Data?) {
 //        let decoder = JSONDecoder()
 //
@@ -79,12 +116,12 @@ class ViewController: UITableViewController {
 //    }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return petitions.count
+        return filtredPetitions.count
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
-        let petition = petitions[indexPath.row]
+        let petition = filtredPetitions[indexPath.row]
         // setup cell
         var content = cell.defaultContentConfiguration()
         content.text = petition.title
@@ -97,7 +134,7 @@ class ViewController: UITableViewController {
     // transfer data to detail view
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let vc = DetailViewController()
-        vc.detailItem = petitions[indexPath.row]
+        vc.detailItem = filtredPetitions[indexPath.row]
         navigationController?.pushViewController(vc, animated: true)
     }
 
